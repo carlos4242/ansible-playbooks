@@ -1,0 +1,88 @@
+- hosts: pi
+  become: yes
+  tasks:
+  - name: Get passwords
+    include_vars: wap-passwords.yml
+
+  - name: Install HOSTAPD
+    package:
+      name:
+        - hostapd
+      state: present
+
+  - name: copy bridge netdev
+    copy:
+      src: bridge-br0.netdev
+      dest: /etc/systemd/network/bridge-br0.netdev
+
+  - name: copy bridge contents
+    copy:
+      src: br0-member-eth0.network
+      dest: /etc/systemd/network/br0-member-eth0.network
+
+  - name: Systemd Networkd enable
+    service:
+      name: systemd-networkd
+      enabled: yes
+
+  - name: DHCP client daemon no wlan0/eth0 ip interfaces
+    lineinfile:
+      dest: /etc/dhcpcd.conf
+      regexp: ".*denyinterfaces.*"
+      insertafter: EOF
+      line: "denyinterfaces wlan0"
+      # line: "denyinterfaces wlan0 eth0"
+      backup: yes
+      state: present
+
+  - name: DHCP client daemon br0 interface
+    lineinfile:
+      dest: /etc/dhcpcd.conf
+      regexp: ".*interface br0"
+      insertafter: EOF
+      line: "interface br0"
+      backup: yes
+      state: present
+
+  - name: hostapd.conf setup
+    template:
+      src: hostapd.conf.j2
+      dest: /etc/hostapd/hostapd.conf
+      backup: true
+
+  - name: HostAPD | Make sure the service is unmasked
+    systemd:
+      name: hostapd
+      masked: no
+
+  - name: HostAPD | Make sure the service is unmasked, started, and enabled
+    systemd:
+      name: hostapd
+      state: started
+      enabled: yes
+      masked: no
+
+  # In theory, restarting these two services should bring the bridged WAP
+  # up, but I think as soon as you restart systemd-networkd, you'll lose
+  # access via eth0, so ansible will be unable to restart dhcpcd, which is
+  # what is needed to bring up tcp/ip on br0 - the bridge and complete the
+  # build.
+
+  # - name: Systemd Networkd restart
+  #   service:
+  #     name: systemd-networkd
+  #     state: restarted
+
+  # - name: DHCP client restart
+  #   service:
+  #     name: dhcpcd
+  #     state: restarted
+
+  # So as a less elegant crude hack, we reboot the pi instead.
+  # This also causes a disconnect so ansible will report a fail, although the
+  # install should have completed successfully once the pi comes back online.
+
+  - name: restart pi
+    reboot:
+      reboot_timeout: 22
+

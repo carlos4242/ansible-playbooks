@@ -1,0 +1,39 @@
+- hosts: pi
+  become: yes
+  vars_prompt:
+    - name: new_password
+      prompt: "Enter the password you would like to use for the user pi"
+      confirm: yes
+    - name: new_root_password
+      prompt: "Enter the password you would like to use for the user root"
+      confirm: yes
+
+  tasks:
+  - name: copy ssh public key
+    copy:
+      src: id_rsa.pub
+      dst: ~/.ssh/macbook_key.pub
+
+  - name: add ssh key to authorized_keys
+    shell: grep -q $(cat ~/.ssh/macbook_key.pub) ~/.ssh/authorized_keys || cat ~/.ssh/macbook_key.pub >> ~/.ssh/authorized_keys
+
+  - name: generate hash pass
+    delegate_to: localhost
+    command:  python -c "from passlib.hash import md5_crypt; import getpass; print (md5_crypt.hash('{{new_password}}'))"
+    register: hash
+
+  - name: generate root hash pass
+    delegate_to: localhost
+    command:  python -c "from passlib.hash import md5_crypt; import getpass; print (md5_crypt.hash('{{new_password}}'))"
+    register: root_hash
+
+  - debug:
+    msg: "Password hash is {{ hash.stdout }}, root password hash is {{ root_hash.stdout }}."
+
+  - user:
+    name: pi
+    password: '{{hash.stdout}}'
+
+  - user:
+    name: root
+    password: '{{root_hash.stdout}}'

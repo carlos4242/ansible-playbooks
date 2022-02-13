@@ -1,9 +1,12 @@
-.vagrant
-/cookbooks
+104.*
 
-# Bundler
-bin/*
-.bundle/*
+wap-passwords.yml
+update-website*
+update-s4a*
+update-petosoft*
 
-.kitchen/
-.kitchen.local.yml
+pi4 setup notes.txt
+
+fetch-communications.*
+find-customer-key.*
+

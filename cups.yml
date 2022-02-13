@@ -1,0 +1,58 @@
+- hosts: pi
+  become: yes
+  tasks: 
+  - name: Setup CUPS/Airplay/SANE
+    package:
+      name:
+        - cups
+        - avahi-discover
+        - hplip
+        - sane
+      state: present
+
+  - name: Setup open configuration for LAN access
+    copy:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+      owner: root
+      group: root
+      mode: 0644
+    with_items:
+      - src: cupsd.conf
+        dest: /etc/cups/cupsd.conf
+      - src: saned.conf
+        dest: /etc/sane.d/saned.conf
+      - src: saned
+        dest: /etc/default/saned
+
+  - name: Add user to lpadmin
+    user:
+      name: pi
+      append: yes
+      group: lpadmin
+
+  - name: Add sane to lp
+    user:
+      name: sane
+      append: yes
+      group: lp
+
+  - name: Allow cups across network
+    shell: cupsctl --remote-any
+
+  - name: Restart cups
+    service:
+      name: cups
+      state: restarted
+
+  - name: Find scanners
+    command: sane-find-scanner
+    register: scannersfound
+
+  - debug: var=scannersfound
+
+  - name: Start SANE socket daemon
+    service:
+      name: saned.socket
+      state: started
+      enabled: yes

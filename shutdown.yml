@@ -1,0 +1,5 @@
+- hosts: pi
+  become: yes
+  tasks: 
+  - name: Shutdown...
+    command: shutdown -h +1

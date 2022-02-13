@@ -1,0 +1,20 @@
+---
+ - hosts: pi
+   tasks:
+   - name: hostname
+     debug:
+       var=ansible_hostname
+
+   - name: date and time
+     vars:
+      msg: |
+       Date: {{ ansible_date_time.date }}
+       Timezone: {{ ansible_date_time.tz }}
+     debug:
+      msg: "{{ msg.split('\n') }}"
+
+   - name: populate service facts
+     service_facts:
+
+   - debug:
+       var: ansible_facts.services
