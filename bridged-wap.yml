@@ -30,8 +30,8 @@
       dest: /etc/dhcpcd.conf
       regexp: ".*denyinterfaces.*"
       insertafter: EOF
-      line: "denyinterfaces wlan0"
-      # line: "denyinterfaces wlan0 eth0"
+      # line: "denyinterfaces wlan0"
+      line: "denyinterfaces wlan0 eth0"
       backup: yes
       state: present
 
